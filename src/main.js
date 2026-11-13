@@ -5,6 +5,7 @@ import '@lichess-org/chessground/assets/chessground.brown.css';
 import './style.css';
 import { initAccount, showGames } from './account.js';
 import { START_FEN } from './chess-utils.js';
+import { importGame } from './importers.js';
 import { loadOpenings } from './openings.js';
 import { play as playSound, soundFor } from './sound.js';
 import { renderBoardBadge, setBoardOrientation, syncBoard } from './app/board.js';
@@ -130,6 +131,28 @@ async function openGreatGameFromHash() {
   }
 }
 
+// hints come from the browser extension: board side, and for Chess.com the moves themselves.
+async function openLink(link, hints) {
+  try {
+    const { pgn, orientation } = await importGame(link, hints);
+    return openPgn(pgn, orientation) && (switchTab('analyze'), true);
+  } catch (error) {
+    toast(error.message);
+    return false;
+  }
+}
+
+function openImportFromHash() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const link = params.get('import');
+  if (link) openLink(link, Object.fromEntries(params));
+}
+
+function openFromHash() {
+  openGreatGameFromHash();
+  openImportFromHash();
+}
+
 function openGamesTabAfterSignIn() {
   if (location.hash !== '#games') return;
   history.replaceState(null, '', location.pathname);
@@ -179,12 +202,13 @@ function bindControls() {
   $('opening').onclick = () => switchTab('openings');
   for (const id of ['engine-on', 'engine-lines', 'engine-depth']) $(id).onchange = notifyGameChange;
   $('btn-load-pgn').onclick = () => openPgn($('pgn-input').value) && switchTab('analyze');
+  $('btn-load-link').onclick = () => openLink($('link-input').value);
   $('btn-load-fen').onclick = () => openFen($('fen-input').value) && switchTab('analyze');
   document.querySelectorAll('.tab').forEach((tab) => (tab.onclick = () => switchTab(tab.dataset.tab)));
   document.querySelectorAll('.side-pill').forEach((pill) => (pill.onclick = () => setOrientation(pill.dataset.side)));
   document.addEventListener('keydown', onKeyDown);
   $('board').addEventListener('wheel', onBoardWheel, { passive: false });
-  addEventListener('hashchange', openGreatGameFromHash);
+  addEventListener('hashchange', openFromHash);
 }
 
 onGameChange(renderGame);
@@ -202,4 +226,4 @@ initAccount({
 
 const sharedFen = hashParam('fen');
 if (!(sharedFen && openFen(sharedFen))) notifyGameChange();
-openGreatGameFromHash();
+openFromHash();

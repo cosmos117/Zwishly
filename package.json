@@ -15,6 +15,7 @@
     "dev": "node server/index.js --dev",
     "prebuild": "node scripts/copy-engine.js",
     "build": "vite build",
+    "postbuild": "node scripts/compress.js",
     "start": "node server/index.js"
   },
   "dependencies": {

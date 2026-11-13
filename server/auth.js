@@ -132,12 +132,20 @@ export function destroySession(token) {
 }
 
 const WINDOW_MS = 15 * 60 * 1000;
+const MAX_BUCKETS = 100_000;
 const buckets = new Map();
+
+function dropExpiredBuckets(now) {
+  for (const [key, bucket] of buckets) if (bucket.resetAt <= now) buckets.delete(key);
+}
 
 export function allowAttempt(key, limit) {
   const now = Date.now();
   let bucket = buckets.get(key);
   if (!bucket || bucket.resetAt <= now) {
+    // A flood from many addresses can't grow the table without bound; it is refused instead.
+    if (buckets.size >= MAX_BUCKETS) dropExpiredBuckets(now);
+    if (buckets.size >= MAX_BUCKETS) return false;
     bucket = { count: 0, resetAt: now + WINDOW_MS };
     buckets.set(key, bucket);
   }
@@ -145,8 +153,5 @@ export function allowAttempt(key, limit) {
   return bucket.count <= limit;
 }
 
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, bucket] of buckets) if (bucket.resetAt <= now) buckets.delete(key);
-  deleteExpired.run(now);
-}, 60 * 60 * 1000).unref();
+setInterval(() => dropExpiredBuckets(Date.now()), WINDOW_MS).unref();
+setInterval(() => deleteExpired.run(Date.now()), 60 * 60 * 1000).unref();

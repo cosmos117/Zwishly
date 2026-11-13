@@ -11,10 +11,11 @@ A small Node server adds accounts, so players can link Chess.com and Lichess and
   computes per-player accuracy, draws a clickable eval graph and shows the best alternative
 - **Games**: link **Chess.com** or **Lichess** and browse recent games by **bullet, blitz and rapid**
 - **Openings**: name, short guide and the next theory lines for your chosen side (White or Black) at any position
-- **Import**: paste a PGN or set up a FEN
+- **Import**: paste a PGN, a Lichess game link, or set up a FEN
+- **Browser extension** (`extension/`): adds an “Analyze on Zwishly” button to Chess.com and Lichess game pages
 - **Explore**: play moves on the board to create a variation; click any engine move to play the line
 - **Great games**: the home page board replays the key moment of a random game from 40 classics in `public/great-games.json` (moves checked against the [PGN Mentor](https://www.pgnmentor.com/) archives)
-- Copy FEN/PGN, share a position with `analyze#fen=<FEN>`
+- Copy FEN/PGN, share a position with `analyze#fen=<FEN>`, open a game with `analyze#import=<game link>`
 - Keyboard: ← → Home End to navigate, F to flip; mouse wheel over the board steps through moves
 - **Customize** (🎨 button): 4 minimal themes, 14 boards (incl. wood), 10 piece sets, 5 sound styles, toggles for coordinates, arrows, move icons and sound — saved in the browser
 - Responsive layout for phones
@@ -32,6 +33,9 @@ npm run dev        # http://localhost:5173 (landing page), /analyze (the app)
 npm run build
 npm start          # serves dist/ and the API, default port 3000
 ```
+
+The build also writes Brotli and gzip copies of every text file, which the server sends as they are. Hashed assets are cached for a year,
+the engine and piece sets for a week, and pages are always revalidated. Responses carry a Content-Security-Policy, HSTS and related headers.
 
 Needs Node 22.13 or newer and HTTPS in front of it, on a host that keeps files between restarts:
 accounts live in a SQLite file. Hosts with a throwaway disk will lose every account on redeploy.
@@ -67,8 +71,10 @@ to belong to the account holder; game data is public either way.
 | `src/tactics.js` | Sacrifice / forced-move / recapture detection for Glorious moves |
 | `src/openings.js` + `public/openings.json` | Opening book ([lichess-org/chess-openings](https://github.com/lichess-org/chess-openings), CC0); regenerate with `npm run build-openings` |
 | `src/importers.js` | Chess.com and Lichess clients, grouped into bullet, blitz and rapid |
+| `extension/` | Chrome extension that sends the game on the current Chess.com or Lichess page to the site; see `extension/README.md` |
 | `src/account.js` | Sign-in dialog and the Games tab |
-| `server/` | Account API, sessions and database |
+| `server/` | Account API, sessions and database; `static.js` serves the built site with compression, caching and the security policy |
+| `scripts/compress.js` | Runs after the build and writes the compressed copies |
 | `src/main.js` | Wires the analysis page together |
 | `src/app/` | The analysis page, one module per concern: game state, board, engine panel, moves, review, openings, customize |
 | `scripts/copy-engine.js` | Copies the engine from `node_modules/stockfish` into `public/engine` |

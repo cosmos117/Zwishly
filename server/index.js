@@ -19,6 +19,7 @@ import {
   setPrefs,
   userFromToken,
 } from './auth.js';
+import { contentSecurityPolicy, staticFiles } from './static.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const isDev = process.argv.includes('--dev');
@@ -31,10 +32,23 @@ app.disable('x-powered-by');
 // Number of reverse proxies in front of the app, so rate limits see the real client IP.
 if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY));
 
+const dist = join(root, 'dist');
+// Vite's dev server injects its own inline scripts, so the policy applies to the built site only.
+const csp = isDev ? null : contentSecurityPolicy(dist);
+let warnedAboutProxy = false;
+
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  if (csp) res.setHeader('Content-Security-Policy', csp);
+  if (secureCookie) res.setHeader('Strict-Transport-Security', 'max-age=15552000');
+  if (!warnedAboutProxy && !process.env.TRUST_PROXY && req.headers['x-forwarded-for']) {
+    warnedAboutProxy = true;
+    console.warn('Requests are arriving through a proxy but TRUST_PROXY is not set, so every visitor shares one sign-in rate limit. Set TRUST_PROXY=1.');
+  }
   next();
 });
 
@@ -78,10 +92,10 @@ function credentials(req) {
 }
 
 function rateLimited(req, res, email) {
-  // Each attempt counts against both limits, so test both rather than short-circuiting.
-  const byIp = allowAttempt(`ip:${req.ip}`, 30);
-  const byAccount = allowAttempt(`account:${req.ip}:${email}`, 8);
-  if (byIp && byAccount) return false;
+  // The per-account limit is keyed by what the client sent, so it only counts well-formed
+  // emails from an address still under its own limit. Anything else could fill memory with keys.
+  const allowed = allowAttempt(`ip:${req.ip}`, 30) && (!isValidEmail(email) || allowAttempt(`account:${req.ip}:${email}`, 8));
+  if (allowed) return false;
   res.status(429).json({ error: 'Too many attempts. Wait a few minutes and try again.' });
   return true;
 }
@@ -158,7 +172,24 @@ if (isDev) {
   const vite = await createServer({ root, server: { middlewareMode: true } });
   app.use(vite.middlewares);
 } else {
-  app.use(express.static(join(root, 'dist'), { extensions: ['html'] }));
+  app.use(staticFiles(dist));
 }
 
-app.listen(port, () => console.log(`Zwishly running at http://localhost:${port}`));
+app.use((req, res) => res.status(404).type('text').send('Not found.'));
+// Without this, Express answers a failed request with a stack trace.
+app.use((err, req, res, next) => {
+  const status = err.status >= 400 && err.status < 500 ? err.status : 500;
+  if (status === 500) console.error(err);
+  res.status(status).type('text').send(status === 500 ? 'Something went wrong on our side.' : 'Bad request.');
+});
+
+const server = app.listen(port, () => console.log(`Zwishly running at http://localhost:${port}`));
+
+// Let requests in flight finish when the host stops or redeploys the app.
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.once(signal, () => {
+    server.close(() => process.exit(0));
+    server.closeIdleConnections();
+    setTimeout(() => process.exit(0), 5000).unref();
+  });
+}
