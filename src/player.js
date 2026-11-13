@@ -21,6 +21,12 @@ export function rememberPlayer(site, username) {
   localStorage.setItem(KEY, JSON.stringify({ ...rememberedPlayers(), [site]: username }));
 }
 
+export function forgetPlayer(site) {
+  const { [site]: _, ...rest } = rememberedPlayers();
+  if (Object.keys(rest).length) localStorage.setItem(KEY, JSON.stringify(rest));
+  else localStorage.removeItem(KEY);
+}
+
 export function forgetPlayers() {
   localStorage.removeItem(KEY);
 }

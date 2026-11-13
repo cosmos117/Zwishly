@@ -6,68 +6,25 @@ import '@lichess-org/chessground/assets/chessground.brown.css';
 import './style.css';
 import './landing.css';
 import { moveLabel } from './chess-utils.js';
-import { SITES, playerExists } from './importers.js';
-import { USERNAME_RE, forgetPlayers, rememberPlayer, rememberedPlayers } from './player.js';
+import { SITES } from './importers.js';
+import { forgetPlayers, rememberedPlayers } from './player.js';
 import { loadPrefs, applyTheme } from './themes.js';
 
 const $ = (id) => document.getElementById(id);
 applyTheme(loadPrefs());
 
-// "Type your username, get your last game reviewed." The name is kept in this browser, and from then on
-// opening the site goes straight to the newest game (see the redirect script in index.html).
-const form = { site: 'chesscom' };
-
-function selectSite(site) {
-  form.site = site;
-  document.querySelectorAll('#latest-form .site-pill').forEach((pill) => {
-    const on = pill.dataset.site === site;
-    pill.classList.toggle('active', on);
-    pill.setAttribute('aria-pressed', String(on));
-  });
-  $('latest-user').value = rememberedPlayers()[site] ?? '';
-  $('latest-error').textContent = '';
-}
-
+// Players who saved a username in the analysis page are sent straight to their latest game (see the
+// redirect script in index.html). Here they can see that and turn it off.
 function renderRemembered() {
-  const players = rememberedPlayers();
-  const names = Object.entries(players).map(([site, name]) => `${name} (${SITES[site].name})`);
+  const names = Object.entries(rememberedPlayers()).map(([site, name]) => `${name} (${SITES[site].name})`);
   $('latest-remembered').classList.toggle('hidden', !names.length);
   $('latest-name').textContent = names.join(', ');
 }
 
-async function submitLatest(event) {
-  event.preventDefault();
-  const username = $('latest-user').value.trim();
-  const error = $('latest-error');
-  error.textContent = '';
-  if (!USERNAME_RE.test(username)) {
-    error.textContent = username ? 'Usernames use only letters, numbers, - and _.' : `Enter your ${SITES[form.site].name} username.`;
-    return;
-  }
-  const button = $('latest-submit');
-  button.disabled = true;
-  try {
-    if (!(await playerExists(form.site, username))) {
-      error.textContent = `We couldn’t find “${username}” on ${SITES[form.site].name}.`;
-      return;
-    }
-    rememberPlayer(form.site, username);
-    location.href = 'analyze.html#latest';
-  } finally {
-    button.disabled = false;
-  }
-}
-
-document.querySelectorAll('#latest-form .site-pill').forEach((pill) => (pill.onclick = () => selectSite(pill.dataset.site)));
-$('latest-form').onsubmit = submitLatest;
 $('latest-forget').onclick = () => {
   forgetPlayers();
-  selectSite(form.site);
   renderRemembered();
-  $('latest-user').focus();
 };
-const remembered = rememberedPlayers();
-selectSite(!remembered.chesscom && remembered.lichess ? 'lichess' : 'chesscom');
 renderRemembered();
 
 let greatGames = [];

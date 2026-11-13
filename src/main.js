@@ -5,9 +5,9 @@ import '@lichess-org/chessground/assets/chessground.brown.css';
 import './style.css';
 import { START_FEN } from './chess-utils.js';
 import { initGames, showGames } from './games.js';
-import { fetchLatestGame, importGame } from './importers.js';
+import { SITES, fetchLatestGame, importGame, playerExists } from './importers.js';
 import { loadOpenings } from './openings.js';
-import { rememberedPlayers } from './player.js';
+import { USERNAME_RE, forgetPlayer, rememberPlayer, rememberedPlayers } from './player.js';
 import { play as playSound, soundFor } from './sound.js';
 import { renderBoardBadge, setBoardOrientation, syncBoard } from './app/board.js';
 import { initCustomize, setDrawerOpen, toggleMute } from './app/customize.js';
@@ -148,15 +148,15 @@ function openImportFromHash() {
   if (link) openLink(link, Object.fromEntries(params));
 }
 
-// analyze#latest: open the remembered player's newest game, across Chess.com and Lichess, and review it at once.
-async function openLatestFromHash() {
-  if (!new URLSearchParams(location.hash.slice(1)).has('latest')) return;
-  const players = Object.entries(rememberedPlayers());
-  if (!players.length) {
-    switchTab('games');
-    toast('Enter your username to see your games.');
-    return;
-  }
+// A review in progress has to wind down before the next one can start.
+async function stopReview() {
+  if (!game.reviewing) return;
+  toggleReview();
+  for (let i = 0; i < 100 && game.reviewing; i++) await new Promise((resolve) => setTimeout(resolve, 30));
+}
+
+// Opens the newest finished game among these [site, username] pairs and starts reviewing it.
+async function openLatestGame(players) {
   toast('Finding your latest game…');
   const results = await Promise.allSettled(players.map(([site, username]) => fetchLatestGame(site, username)));
   const found = results.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
@@ -166,9 +166,64 @@ async function openLatestFromHash() {
     toast(failure ? failure.reason.message : 'No finished games yet. Play one and come back.');
     return;
   }
+  await stopReview();
   if (!openPgn(latest.pgn, latest.userColor)) return;
   switchTab('analyze');
-  if (!game.reviewing) toggleReview();
+  toggleReview();
+}
+
+// analyze#latest (where the home page sends returning players): every remembered username, newest game wins.
+function openLatestFromHash() {
+  if (!new URLSearchParams(location.hash.slice(1)).has('latest')) return;
+  const players = Object.entries(rememberedPlayers());
+  if (players.length) openLatestGame(players);
+  else $('latest-user').focus();
+}
+
+// The username box in the top bar. The name is remembered in this browser, so later visits open
+// the latest game by themselves. Submitting an empty box forgets that site's name.
+function showRememberedName() {
+  $('latest-user').value = rememberedPlayers()[$('latest-site').value] ?? '';
+}
+
+async function submitLatest(event) {
+  event.preventDefault();
+  const site = $('latest-site').value;
+  const siteName = SITES[site].name;
+  const username = $('latest-user').value.trim();
+  if (!username) {
+    if (rememberedPlayers()[site]) {
+      forgetPlayer(site);
+      toast(`Forgot your ${siteName} username.`);
+    } else {
+      toast(`Enter your ${siteName} username.`);
+    }
+    return;
+  }
+  if (!USERNAME_RE.test(username)) {
+    toast('Usernames use only letters, numbers, - and _.');
+    return;
+  }
+  const button = $('latest-submit');
+  button.disabled = true;
+  try {
+    if (!(await playerExists(site, username))) {
+      toast(`We couldn’t find “${username}” on ${siteName}.`);
+      return;
+    }
+    rememberPlayer(site, username);
+    await openLatestGame([[site, username]]);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function initLatestForm() {
+  const players = rememberedPlayers();
+  $('latest-site').value = !players.chesscom && players.lichess ? 'lichess' : 'chesscom';
+  showRememberedName();
+  $('latest-site').onchange = showRememberedName;
+  $('latest-form').onsubmit = submitLatest;
 }
 
 function openFromHash() {
@@ -234,6 +289,7 @@ bindControls();
 
 loadOpenings().then(notifyGameChange);
 initGames({ onOpenGame: (played) => openPgn(played.pgn, played.userColor) && switchTab('analyze') });
+initLatestForm();
 
 const sharedFen = hashParam('fen');
 if (!(sharedFen && openFen(sharedFen))) notifyGameChange();

@@ -21,6 +21,14 @@
     <header class="topbar">
       <a class="brand" href="./" aria-label="Zwishly home"><svg class="logo" viewBox="0 0 98 98" aria-hidden="true"><rect x="0" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="20" y="0" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="40" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="0" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="80" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="20" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="40" y="40" width="18" height="18" rx="2.5" fill="#e8683a"/><rect x="20" y="60" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="0" y="80" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="20" y="80" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="40" y="80" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="80" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="80" y="80" width="18" height="18" rx="2.5" fill="currentColor"/></svg><span class="wordmark">zwishly</span></a>
       <div class="top-actions">
+        <form id="latest-form" class="latest-form" novalidate title="Your username is remembered in this browser, so next time your latest game opens by itself.">
+          <select id="latest-site" aria-label="Where you play">
+            <option value="chesscom">Chess.com</option>
+            <option value="lichess">Lichess</option>
+          </select>
+          <input id="latest-user" type="text" placeholder="Your username" aria-label="Your username" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" />
+          <button id="latest-submit" class="primary" type="submit" aria-label="Review last game"><span class="label-long">Review last game</span><span class="label-short">Review</span></button>
+        </form>
         <button id="btn-customize" class="ghost-btn" title="Colors, board and pieces">Customize</button>
       </div>
     </header>

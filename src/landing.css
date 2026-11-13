@@ -11,18 +11,13 @@
 .landing h1 { margin: 0; font-size: clamp(2.9rem, 6.2vw, 5.4rem); font-weight: 650; line-height: 0.98; letter-spacing: -0.045em; text-wrap: balance; }
 .landing h1 em { font-style: normal; color: var(--accent); }
 .landing-lead { max-width: 30rem; margin: 26px 0 32px; color: var(--muted); font-size: 1.125rem; line-height: 1.55; }
-.latest-form { max-width: 32rem; }
-.latest-form .site-pills { width: 260px; max-width: 100%; border: 1px solid var(--line); }
-.latest-row { display: flex; gap: 8px; }
-.latest-row input { flex: 1; min-width: 0; margin: 0; padding: 12px 14px; font-size: 1rem; border-radius: 6px; }
-.latest-form .form-error { margin: 8px 0 0; }
-.latest-form .form-error:empty { display: none; }
-.landing-cta { padding: 14px 28px; border: none; border-radius: 6px; background: var(--text); color: var(--bg); font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer; transition: transform 0.15s ease; }
+.landing-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
+.landing-cta { padding: 14px 28px; border-radius: 6px; background: var(--text); color: var(--bg); font-weight: 600; text-decoration: none; transition: transform 0.15s ease; }
 .landing-cta:hover { transform: translateY(-2px); }
-.landing-note { margin: 12px 0 0; color: var(--muted); font-size: 0.875rem; line-height: 1.6; }
-.landing-note a { color: var(--text); text-underline-offset: 3px; }
-.landing-note b { color: var(--text); }
-.landing-note .link-btn { margin-left: 4px; }
+.landing-note { color: var(--muted); font-size: 0.875rem; }
+.landing-remembered { margin: 16px 0 0; }
+.landing-remembered b { color: var(--text); }
+.landing-remembered .link-btn { margin-left: 4px; }
 
 .landing-demo { --board: min(62vh, 500px, calc(50vw - 40px)); margin: 0; width: var(--board); }
 .landing-demo .board-wrap { pointer-events: none; }
@@ -48,10 +43,6 @@
   .landing-main { grid-template-columns: minmax(0, 1fr); gap: 36px; }
   .landing-demo { --board: min(calc(100vw - 44px), 460px); margin-inline: auto; }
   .landing-nav .ghost-link { display: none; }
-}
-@media (max-width: 480px) {
-  .latest-row { flex-direction: column; }
-}
-@media (prefers-reduced-motion: reduce) {
+}@media (prefers-reduced-motion: reduce) {
   .landing-cta { transition: none; }
 }

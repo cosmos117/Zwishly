@@ -1,12 +1,13 @@
 # zwishly
 
 Free chess game review. Stockfish 19 runs on the visitor's own device, so analysis costs nothing to serve.
-No accounts: a player types their Chess.com or Lichess username once, and from then on opening the site shows their latest game, already being reviewed.
+No accounts: a player types their Chess.com or Lichess username once, in the box next to Customize, and from then on opening the site shows their latest game, already being reviewed.
 
 ## Features
 
-- **Your last game, reviewed**: enter a Chess.com or Lichess username on the home page and the newest finished game opens with the review running.
-  The username is remembered in the browser, so later visits go straight to the latest game (across both sites if both are saved)
+- **Your last game, reviewed**: enter a Chess.com or Lichess username in the top bar of the analysis page and the newest finished game opens with the review running.
+  The username is remembered in the browser, so later visits to the home page go straight to the latest game (across both sites if both are saved).
+  The home page shows the remembered names with a Forget link; submitting an empty box forgets that site's name
 - **Live engine analysis**: up to 3 lines, configurable depth, best-move arrows, eval bar
 - **Game review**: labels every move — 👑 Glorious (winning sacrifice or only move), 📖 TextBook (named opening theory),
   ★ Best, ✓ Decent, ?! Inaccuracy, ✕ Overlook (missed advantage), ? Error, ?? Blunder —
@@ -71,7 +72,7 @@ Nearly all of the memory is the Stockfish worker, which reserves a fixed block r
 | `src/importers.js` | Chess.com and Lichess clients: recent games by time control, the latest game, single games by link |
 | `src/player.js` | The remembered Chess.com and Lichess usernames (browser storage) |
 | `src/games.js` | The Games tab |
-| `src/landing.js` | Home page: username box and the great-games replay |
+| `src/landing.js` | Home page: great-games replay and the remembered-names line |
 | `extension/` | Chrome extension that sends the game on the current Chess.com or Lichess page to the site; see `extension/README.md` |
 | `server/` | Serves the built site; `static.js` adds compression, caching and the security policy |
 | `scripts/compress.js` | Runs after the build and writes the compressed copies |

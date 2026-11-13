@@ -40,21 +40,13 @@
         <p class="landing-def"><i>zwischenzug</i> (n.) an unexpected move creating an immediate threat.</p>
         <h1>Find the move <em>between</em> the moves.</h1>
         <p class="landing-lead">Zwishly reviews your Chess.com and Lichess games and shows you what you missed. It’s free, and the engine runs on your own device.</p>
-        <form id="latest-form" class="latest-form" novalidate>
-          <div class="site-pills" role="group" aria-label="Where you play">
-            <button type="button" class="site-pill active" data-site="chesscom" aria-pressed="true">Chess.com</button>
-            <button type="button" class="site-pill" data-site="lichess" aria-pressed="false">Lichess</button>
-          </div>
-          <div class="latest-row">
-            <input id="latest-user" type="text" placeholder="Your username" aria-label="Your username" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" />
-            <button id="latest-submit" class="landing-cta" type="submit">Review my last game</button>
-          </div>
-          <p id="latest-error" class="form-error" role="alert"></p>
-          <p class="landing-note">
-            Free, unlimited, no account. <a href="analyze.html">Or open the board</a>.
-            <span id="latest-remembered" class="hidden"><br />Remembered: <b id="latest-name"></b> <button id="latest-forget" class="link-btn" type="button">Forget</button></span>
-          </p>
-        </form>
+        <div class="landing-actions">
+          <a class="landing-cta" href="analyze.html">Review a game</a>
+          <span class="landing-note">No account needed.</span>
+        </div>
+        <p id="latest-remembered" class="landing-note landing-remembered hidden">
+          Opens your latest game: <b id="latest-name"></b> <button id="latest-forget" class="link-btn" type="button">Forget</button>
+        </p>
       </section>
 
       <figure class="landing-demo">
