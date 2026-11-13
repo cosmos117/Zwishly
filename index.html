@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zwishly: free chess game review</title>
+    <meta name="description" content="Free game review for your Chess.com and Lichess games. Zwishly runs Stockfish on your own device and shows you the moves you missed." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      // Apply the saved site theme before first paint to avoid a flash.
+      try {
+        document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('chess-analysis-prefs') || '{}').site || 'dark';
+      } catch {}
+    </script>
+  </head>
+  <body class="landing">
+    <!--loader-->
+    <div class="landing-hero">
+    <header class="landing-top">
+      <a class="brand" href="./" aria-label="Zwishly home"><svg class="logo" viewBox="0 0 98 98" aria-hidden="true"><rect x="0" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="20" y="0" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="40" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="0" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="80" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="20" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="40" y="40" width="18" height="18" rx="2.5" fill="#e8683a"/><rect x="20" y="60" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="0" y="80" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="20" y="80" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="40" y="80" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="80" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="80" y="80" width="18" height="18" rx="2.5" fill="currentColor"/></svg><span class="wordmark">zwishly</span></a>
+      <nav class="landing-nav">
+        <a class="ghost-link" href="analyze.html">Open the board</a>
+        <div id="landing-guest" class="account-menu">
+          <button id="landing-signin" class="ghost-btn">Sign in</button>
+          <button id="landing-signup" class="primary">Sign up</button>
+        </div>
+      </nav>
+    </header>
+
+    <main class="landing-main">
+      <section class="landing-copy">
+        <p class="landing-def"><i>zwischenzug</i> (n.) an unexpected move creating an immediate threat.</p>
+        <h1>Find the move <em>between</em> the moves.</h1>
+        <p class="landing-lead">Zwishly reviews your Chess.com and Lichess games and shows you what you missed. It’s free, and the engine runs on your own device.</p>
+        <div class="landing-actions">
+          <a class="landing-cta" href="analyze.html">Review a game</a>
+          <span id="landing-note" class="landing-note">No account needed.</span>
+        </div>
+      </section>
+
+      <figure class="landing-demo">
+        <div class="board-wrap" role="img" aria-label="Replay of the key moment from a great chess game.">
+          <div id="demo-board"></div>
+          <div id="demo-badge" class="landing-badge-layer"></div>
+        </div>
+        <figcaption>
+          <a id="demo-title" class="demo-title"></a>
+          <span id="demo-caption" class="demo-caption"></span>
+          <button id="demo-pause" class="demo-pause" type="button" aria-label="Pause replay" title="Pause replay"></button>
+        </figcaption>
+      </figure>
+    </main>
+
+    </div>
+
+    <script type="module" src="/src/landing.js"></script>
+  </body>
+</html>
