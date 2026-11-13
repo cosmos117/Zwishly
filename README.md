@@ -37,13 +37,25 @@ npm start          # serves dist/ and the API, default port 3000
 The build also writes Brotli and gzip copies of every text file, which the server sends as they are. Hashed assets are cached for a year,
 the engine and piece sets for a week, and pages are always revalidated. Responses carry a Content-Security-Policy, HSTS and related headers.
 
-Needs Node 22.13 or newer and HTTPS in front of it, on a host that keeps files between restarts:
-accounts live in a SQLite file. Hosts with a throwaway disk will lose every account on redeploy.
+Needs Node 22.13 or newer and HTTPS in front of it. Accounts are stored in one of two places:
+
+- **Turso** (hosted, SQLite-compatible, has a free plan): set `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`. Use this on hosts
+  with a throwaway disk, such as Render's free plan.
+- **A local SQLite file**, when those are not set. The host must keep files between restarts, or every account is lost on redeploy.
+
+### Render (free) with Turso
+
+1. Create a database at [turso.tech](https://turso.tech) and copy its URL (`libsql://…`) and an auth token.
+2. On [Render](https://render.com) choose **New > Blueprint** and pick this repository. `render.yaml` sets the build and start commands.
+3. Enter the two Turso values when asked, then deploy. The tables are created on first start.
+
+The free plan sleeps after a quiet spell, so the first visit afterwards takes up to a minute.
 
 | Variable | Purpose |
 | --- | --- |
 | `PORT` | Port to listen on |
-| `DATABASE_PATH` | Where to keep the SQLite file (default `data/zwishly.db`); point it at the persistent disk |
+| `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Store accounts in Turso instead of a local file |
+| `DATABASE_PATH` | Where to keep the local SQLite file (default `data/zwishly.db`); point it at the persistent disk |
 | `TRUST_PROXY` | Number of reverse proxies in front of the app (usually `1`), so rate limits see real client IPs |
 | `COOKIE_SECURE` | Set to `false` only for a private plain-HTTP deployment |
 

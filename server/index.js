@@ -82,8 +82,8 @@ function readCookie(req, name) {
 
 const cookieOptions = { httpOnly: true, sameSite: 'lax', secure: secureCookie, path: '/' };
 
-function startSession(res, userId) {
-  res.cookie(SESSION_COOKIE, createSession(userId), { ...cookieOptions, maxAge: SESSION_MS });
+async function startSession(res, userId) {
+  res.cookie(SESSION_COOKIE, await createSession(userId), { ...cookieOptions, maxAge: SESSION_MS });
 }
 
 function credentials(req) {
@@ -109,7 +109,7 @@ api.post('/auth/register', async (req, res) => {
   }
   const created = await createUser(email, password);
   if (!created) return res.status(409).json({ error: 'An account with this email already exists. Try signing in.' });
-  startSession(res, created.id);
+  await startSession(res, created.id);
   res.status(201).json({ user: created.user });
 });
 
@@ -118,12 +118,12 @@ api.post('/auth/login', async (req, res) => {
   if (rateLimited(req, res, email)) return;
   const account = isValidEmail(email) && isValidPassword(password) ? await authenticate(email, password) : null;
   if (!account) return res.status(401).json({ error: 'That email and password don’t match.' });
-  startSession(res, account.id);
+  await startSession(res, account.id);
   res.json({ user: account.user });
 });
 
-api.post('/auth/logout', (req, res) => {
-  destroySession(readCookie(req, SESSION_COOKIE));
+api.post('/auth/logout', async (req, res) => {
+  await destroySession(readCookie(req, SESSION_COOKIE));
   res.clearCookie(SESSION_COOKIE, cookieOptions);
   res.json({ ok: true });
 });
@@ -132,12 +132,12 @@ function currentUser(req) {
   return userFromToken(readCookie(req, SESSION_COOKIE));
 }
 
-api.get('/me', (req, res) => {
-  res.json({ user: currentUser(req)?.user ?? null });
+api.get('/me', async (req, res) => {
+  res.json({ user: (await currentUser(req))?.user ?? null });
 });
 
-api.put('/me/accounts', (req, res) => {
-  const account = currentUser(req);
+api.put('/me/accounts', async (req, res) => {
+  const account = await currentUser(req);
   if (!account) return res.status(401).json({ error: 'Please sign in again.' });
   const clean = (name) => (typeof name === 'string' && name.trim() ? name.trim() : null);
   const chesscom = clean(req.body?.chesscom);
@@ -145,15 +145,15 @@ api.put('/me/accounts', (req, res) => {
   for (const name of [chesscom, lichess]) {
     if (name !== null && !isValidUsername(name)) return res.status(400).json({ error: 'That doesn’t look like a valid username.' });
   }
-  res.json({ user: setLinkedAccounts(account.id, chesscom, lichess) });
+  res.json({ user: await setLinkedAccounts(account.id, chesscom, lichess) });
 });
 
-api.put('/me/prefs', (req, res) => {
-  const account = currentUser(req);
+api.put('/me/prefs', async (req, res) => {
+  const account = await currentUser(req);
   if (!account) return res.status(401).json({ error: 'Please sign in again.' });
   const prefs = cleanPrefs(req.body);
   if (!prefs) return res.status(400).json({ error: 'Invalid request.' });
-  res.json({ user: setPrefs(account.id, prefs) });
+  res.json({ user: await setPrefs(account.id, prefs) });
 });
 
 api.use((req, res) => res.status(404).json({ error: 'Not found.' }));

@@ -1,6 +1,6 @@
 import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { db } from './db.js';
+import { getRow, run } from './db.js';
 
 const scryptAsync = promisify(scrypt);
 
@@ -50,15 +50,14 @@ const publicUser = (row) => ({
   prefs: row.prefs ? JSON.parse(row.prefs) : null,
 });
 
-const insertUser = db.prepare('INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)');
-const userByEmail = db.prepare('SELECT * FROM users WHERE email = ?');
-const userById = db.prepare('SELECT * FROM users WHERE id = ?');
+const userById = (id) => getRow('SELECT * FROM users WHERE id = ?', id);
 
 export async function createUser(email, password) {
   const hash = await hashPassword(password);
   try {
-    const { lastInsertRowid } = insertUser.run(email, hash, Date.now());
-    return { id: Number(lastInsertRowid), user: publicUser(userById.get(lastInsertRowid)) };
+    const { lastInsertRowid } = await run('INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)', email, hash, Date.now());
+    const id = Number(lastInsertRowid);
+    return { id, user: publicUser(await userById(id)) };
   } catch (e) {
     if (String(e.message).includes('UNIQUE')) return null;
     throw e;
@@ -66,17 +65,15 @@ export async function createUser(email, password) {
 }
 
 export async function authenticate(email, password) {
-  const row = userByEmail.get(email);
+  const row = await getRow('SELECT * FROM users WHERE email = ?', email);
   // password_hash is null for accounts that only sign in through a provider such as Google.
   const ok = await verifyPassword(password, row?.password_hash ?? dummyHash);
-  return row?.password_hash && ok ? { id: row.id, user: publicUser(row) } : null;
+  return row?.password_hash && ok ? { id: Number(row.id), user: publicUser(row) } : null;
 }
 
-const updateLinks = db.prepare('UPDATE users SET chesscom_username = ?, lichess_username = ? WHERE id = ?');
-
-export function setLinkedAccounts(userId, chesscom, lichess) {
-  updateLinks.run(chesscom, lichess, userId);
-  return publicUser(userById.get(userId));
+export async function setLinkedAccounts(userId, chesscom, lichess) {
+  await run('UPDATE users SET chesscom_username = ?, lichess_username = ? WHERE id = ?', chesscom, lichess, userId);
+  return publicUser(await userById(userId));
 }
 
 const THEME_ID_RE = /^[A-Za-z0-9-]{1,32}$/;
@@ -97,38 +94,33 @@ export function cleanPrefs(input) {
   return prefs;
 }
 
-const updatePrefs = db.prepare('UPDATE users SET prefs = ? WHERE id = ?');
-
-export function setPrefs(userId, prefs) {
-  updatePrefs.run(JSON.stringify(prefs), userId);
-  return publicUser(userById.get(userId));
+export async function setPrefs(userId, prefs) {
+  await run('UPDATE users SET prefs = ? WHERE id = ?', JSON.stringify(prefs), userId);
+  return publicUser(await userById(userId));
 }
 
 // The cookie holds a random token; only its hash is stored, so a leaked database
 // can't be replayed as live sessions.
 const hashToken = (token) => createHash('sha256').update(token).digest('hex');
 
-const insertSession = db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)');
-const sessionUser = db.prepare(
-  'SELECT users.* FROM sessions JOIN users ON users.id = sessions.user_id WHERE token_hash = ? AND expires_at > ?',
-);
-const deleteSession = db.prepare('DELETE FROM sessions WHERE token_hash = ?');
-const deleteExpired = db.prepare('DELETE FROM sessions WHERE expires_at <= ?');
-
-export function createSession(userId) {
+export async function createSession(userId) {
   const token = randomBytes(32).toString('base64url');
-  insertSession.run(hashToken(token), userId, Date.now() + SESSION_MS);
+  await run('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)', hashToken(token), userId, Date.now() + SESSION_MS);
   return token;
 }
 
-export function userFromToken(token) {
+export async function userFromToken(token) {
   if (!token) return null;
-  const row = sessionUser.get(hashToken(token), Date.now());
-  return row ? { id: row.id, user: publicUser(row) } : null;
+  const row = await getRow(
+    'SELECT users.* FROM sessions JOIN users ON users.id = sessions.user_id WHERE token_hash = ? AND expires_at > ?',
+    hashToken(token),
+    Date.now(),
+  );
+  return row ? { id: Number(row.id), user: publicUser(row) } : null;
 }
 
-export function destroySession(token) {
-  if (token) deleteSession.run(hashToken(token));
+export async function destroySession(token) {
+  if (token) await run('DELETE FROM sessions WHERE token_hash = ?', hashToken(token));
 }
 
 const WINDOW_MS = 15 * 60 * 1000;
@@ -154,4 +146,4 @@ export function allowAttempt(key, limit) {
 }
 
 setInterval(() => dropExpiredBuckets(Date.now()), WINDOW_MS).unref();
-setInterval(() => deleteExpired.run(Date.now()), 60 * 60 * 1000).unref();
+setInterval(() => run('DELETE FROM sessions WHERE expires_at <= ?', Date.now()).catch(console.error), 60 * 60 * 1000).unref();
