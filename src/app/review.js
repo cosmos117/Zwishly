@@ -132,6 +132,8 @@ export function renderReview() {
   const review = currentReview();
   const summary = $('review-summary');
   setHidden(summary, !review);
+  // A reviewed game has nothing left to start, so the button and depth choice go away until another game opens.
+  setHidden(document.querySelector('.review-head'), Boolean(review));
   if (review) {
     summary.innerHTML = summaryHtml(review);
     drawGraph(review.evals, review.results, review.evals.length - 1);

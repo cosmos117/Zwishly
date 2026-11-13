@@ -202,7 +202,6 @@ function bindControls() {
   $('opening').onclick = () => switchTab('openings');
   for (const id of ['engine-on', 'engine-lines', 'engine-depth']) $(id).onchange = notifyGameChange;
   $('btn-load-pgn').onclick = () => openPgn($('pgn-input').value) && switchTab('analyze');
-  $('btn-load-link').onclick = () => openLink($('link-input').value);
   $('btn-load-fen').onclick = () => openFen($('fen-input').value) && switchTab('analyze');
   document.querySelectorAll('.tab').forEach((tab) => (tab.onclick = () => switchTab(tab.dataset.tab)));
   document.querySelectorAll('.side-pill').forEach((pill) => (pill.onclick = () => setOrientation(pill.dataset.side)));

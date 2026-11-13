@@ -11,7 +11,7 @@ A small Node server adds accounts, so players can link Chess.com and Lichess and
   computes per-player accuracy, draws a clickable eval graph and shows the best alternative
 - **Games**: link **Chess.com** or **Lichess** and browse recent games by **bullet, blitz and rapid**
 - **Openings**: name, short guide and the next theory lines for your chosen side (White or Black) at any position
-- **Import**: paste a PGN, a Lichess game link, or set up a FEN
+- **Import**: paste a PGN or set up a FEN
 - **Browser extension** (`extension/`): adds an “Analyze on Zwishly” button to Chess.com and Lichess game pages
 - **Explore**: play moves on the board to create a variation; click any engine move to play the line
 - **Great games**: the home page board replays the key moment of a random game from 40 classics in `public/great-games.json` (moves checked against the [PGN Mentor](https://www.pgnmentor.com/) archives)
@@ -60,6 +60,19 @@ The free plan sleeps after a quiet spell, so the first visit afterwards takes up
 | `COOKIE_SECURE` | Set to `false` only for a private plain-HTTP deployment |
 
 `dist/` also works on its own on a static host. Analysis and game lookup still work there; sign-in is hidden.
+
+## Staying on free plans
+
+Render (web service) and Turso (database) both have free plans that are enough for this app. Check their pricing pages now and then, since free terms change.
+
+- **Sleeping**: Render's free service stops after 15 minutes without traffic and takes about a minute to wake. To keep it awake, add a free
+  uptime monitor (for example UptimeRobot) that requests `https://<your-site>/healthz` every 5 minutes. One service running all month
+  uses about 744 of Render's 750 free hours, so keep this the only free service in that Render workspace.
+- **Database limits**: Turso's free plan allows 5 GB of storage, 500 million rows read and 10 million rows written a month. This app uses a
+  tiny fraction: a sign-in is a few rows, and visitors without an account never touch the database. Past the limits, queries fail rather than bill you.
+- **Abuse**: sign-in and sign-up are rate limited per address, and new accounts are capped at 1,000 a day.
+- **Analysis costs nothing to serve**: Stockfish runs in each visitor's browser, and game lookups go from the browser straight to Chess.com and Lichess.
+- **Restarts are safe**: sessions and accounts live in Turso, so Render restarting or redeploying the service signs nobody out.
 
 ## Memory
 

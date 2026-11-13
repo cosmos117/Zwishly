@@ -302,6 +302,7 @@ textarea { resize: vertical; font-family: ui-monospace, monospace; font-size: 0.
 .progress { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
 #review-progress-bar { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
 .review-summary { margin-top: 12px; }
+.review-head.hidden + .review-summary { margin-top: 0; }
 .rs-players { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .rs-player { background: var(--bg3); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
 .rs-name { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }

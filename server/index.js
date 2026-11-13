@@ -6,6 +6,7 @@ import {
   SESSION_COOKIE,
   SESSION_MS,
   allowAttempt,
+  allowSignup,
   authenticate,
   cleanPrefs,
   createSession,
@@ -51,6 +52,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Answers without touching the database. Point a free uptime monitor here to keep the service awake.
+app.get('/healthz', (req, res) => res.type('text').set('Cache-Control', 'no-store').send('ok'));
 
 const api = express.Router();
 api.use((req, res, next) => {
@@ -107,6 +111,7 @@ api.post('/auth/register', async (req, res) => {
   if (!isValidPassword(password)) {
     return res.status(400).json({ error: `Use a password of at least ${MIN_PASSWORD} characters.` });
   }
+  if (!allowSignup()) return res.status(503).json({ error: 'Sign-ups are paused for today. Please try again tomorrow.' });
   const created = await createUser(email, password);
   if (!created) return res.status(409).json({ error: 'An account with this email already exists. Try signing in.' });
   await startSession(res, created.id);

@@ -46,7 +46,7 @@ export function currentReview() {
   return game.review?.version === game.version ? game.review : null;
 }
 
-export function moveTo(inVariation, index) {
+function moveTo(inVariation, index) {
   game.cursor = { inVariation, index };
 }
 
@@ -75,7 +75,7 @@ export function stepBack() {
 export const goToStart = () => goTo(false, 0);
 export const goToEnd = () => goTo(game.cursor.inVariation, activeMoves().length);
 
-export function toMoveNode(move) {
+function toMoveNode(move) {
   return {
     san: move.san,
     uci: moveToUci(move),

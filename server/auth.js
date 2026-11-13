@@ -16,13 +16,13 @@ const MAX_PASSWORD = 200;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_RE = /^[A-Za-z0-9_-]{2,30}$/;
 
-export async function hashPassword(password) {
+async function hashPassword(password) {
   const salt = randomBytes(16);
   const key = await scryptAsync(password, salt, KEY_LENGTH, SCRYPT);
   return `scrypt$${SCRYPT.N}$${SCRYPT.r}$${SCRYPT.p}$${salt.toString('base64')}$${key.toString('base64')}`;
 }
 
-export async function verifyPassword(password, stored) {
+async function verifyPassword(password, stored) {
   const [scheme, N, r, p, salt, hash] = String(stored).split('$');
   if (scheme !== 'scrypt') return false;
   const expected = Buffer.from(hash, 'base64');
@@ -143,6 +143,18 @@ export function allowAttempt(key, limit) {
   }
   bucket.count++;
   return bucket.count <= limit;
+}
+
+// A hard ceiling on new accounts per day, so a flood of sign-ups from many addresses can't
+// fill the free database or use up its monthly write allowance. Normal growth never gets near it.
+const MAX_SIGNUPS_PER_DAY = 1000;
+const signups = { day: '', count: 0 };
+
+export function allowSignup() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (signups.day !== today) Object.assign(signups, { day: today, count: 0 });
+  signups.count++;
+  return signups.count <= MAX_SIGNUPS_PER_DAY;
 }
 
 setInterval(() => dropExpiredBuckets(Date.now()), WINDOW_MS).unref();

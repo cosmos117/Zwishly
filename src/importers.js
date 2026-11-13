@@ -151,7 +151,7 @@ async function importLichessGame(id, orientation) {
 const TCN = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?{~}(^)[_]@#$';
 const square = (index) => 'abcdefgh'[index % 8] + (Math.floor(index / 8) + 1);
 
-export function decodeTcn(tcn) {
+function decodeTcn(tcn) {
   const moves = [];
   for (let i = 0; i + 1 < tcn.length; i += 2) {
     const from = TCN.indexOf(tcn[i]);
