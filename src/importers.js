@@ -74,25 +74,95 @@ function chessComGame(g, user) {
 // Lichess asks clients to send one request at a time, so these run in sequence.
 const LICHESS_PERFS = { bullet: 'ultraBullet,bullet', blitz: 'blitz', rapid: 'rapid' };
 
-async function fetchLichess(username) {
+// Finished standard games only, newest first.
+async function lichessGames(username, options) {
   const user = username.toLowerCase();
-  const groups = {};
-  for (const [id, perfType] of Object.entries(LICHESS_PERFS)) {
-    const params = new URLSearchParams({ max: GAMES_PER_CLASS, perfType, pgnInJson: 'true', clocks: 'false', evals: 'false', opening: 'true' });
-    const res = await fetch(`https://lichess.org/api/games/user/${encodeURIComponent(username)}?${params}`, {
+  const params = new URLSearchParams({ ...options, pgnInJson: 'true', clocks: 'false', evals: 'false', opening: 'true' });
+  let res;
+  try {
+    res = await fetch(`https://lichess.org/api/games/user/${encodeURIComponent(username)}?${params}`, {
       headers: { Accept: 'application/x-ndjson' },
     });
-    if (res.status === 404) throw new Error(`We couldn’t find “${username}” on Lichess.`);
-    if (res.status === 429) throw new Error('Lichess is limiting requests. Try again in a minute.');
-    if (!res.ok) throw new Error('Lichess isn’t responding right now. Try again in a moment.');
-    groups[id] = (await res.text())
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => JSON.parse(line))
-      .filter((g) => g.pgn && (g.variant === 'standard' || g.variant === 'fromPosition') && g.status !== 'aborted' && g.status !== 'noStart')
-      .map((g) => lichessGame(g, user));
+  } catch {
+    throw new Error('Lichess isn’t responding right now. Try again in a moment.');
+  }
+  if (res.status === 404) {
+    // Lichess sometimes answers 404 here for players who do exist, so only blame the username when it really is unknown.
+    if (!(await playerExists('lichess', username))) throw new Error(`We couldn’t find “${username}” on Lichess.`);
+    throw new Error('Lichess isn’t sharing game lists right now. Try again later.');
+  }
+  if (res.status === 429) throw new Error('Lichess is limiting requests. Try again in a minute.');
+  if (!res.ok) throw new Error('Lichess isn’t responding right now. Try again in a moment.');
+  return (await res.text())
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+    .filter(isReviewableLichess)
+    .slice(0, options.max) // Lichess can send more than max asks for
+    .map((g) => lichessGame(g, user));
+}
+
+// Finished, standard chess, with moves. Reviewing a game still being played would be engine assistance.
+const UNREVIEWABLE_STATUS = ['created', 'started', 'aborted', 'noStart'];
+const isReviewableLichess = (g) =>
+  Boolean(g?.pgn) && (g.variant === 'standard' || g.variant === 'fromPosition') && !UNREVIEWABLE_STATUS.includes(g.status);
+
+// One small request for the player's most recent game. Returns null when it can't help (no games,
+// still playing, a variant), and the caller falls back to the full games list.
+async function lichessLastGame(username) {
+  const params = new URLSearchParams({ pgnInJson: 'true', clocks: 'false', evals: 'false', opening: 'true' });
+  let res;
+  try {
+    res = await fetch(`https://lichess.org/api/user/${encodeURIComponent(username)}/current-game?${params}`, {
+      headers: { Accept: 'application/json' },
+    });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+  const g = await res.json().catch(() => null);
+  return isReviewableLichess(g) ? lichessGame(g, username.toLowerCase()) : null;
+}
+
+async function fetchLichess(username) {
+  const groups = {};
+  for (const [id, perfType] of Object.entries(LICHESS_PERFS)) {
+    groups[id] = await lichessGames(username, { max: GAMES_PER_CLASS, perfType });
   }
   return groups;
+}
+
+// The player's most recent finished game of any speed, or null if they have none yet.
+export async function fetchLatestGame(site, username) {
+  if (site === 'lichess') return (await lichessLastGame(username)) ?? (await lichessGames(username, { max: 10 }))[0] ?? null;
+
+  const user = username.toLowerCase();
+  const unreachable = 'Chess.com isn’t responding right now. Try again in a moment.';
+  let res;
+  try {
+    res = await fetch(`https://api.chess.com/pub/player/${encodeURIComponent(user)}/games/archives`);
+  } catch {
+    throw new Error(unreachable);
+  }
+  if (res.status === 404) throw new Error(`We couldn’t find “${username}” on Chess.com.`);
+  if (!res.ok) throw new Error(unreachable);
+  const { archives = [] } = await res.json();
+  // Early in a month the newest archive can still be empty, so look one month further back.
+  for (const url of archives.slice(-2).reverse()) {
+    let games;
+    try {
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      ({ games = [] } = await r.json());
+    } catch {
+      continue;
+    }
+    const latest = games
+      .filter((g) => g.rules === 'chess' && g.pgn)
+      .reduce((best, g) => ((g.end_time ?? 0) > (best?.end_time ?? -1) ? g : best), null);
+    if (latest) return chessComGame(latest, user);
+  }
+  return null;
 }
 
 function lichessGame(g, user) {

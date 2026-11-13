@@ -6,6 +6,18 @@
     <title>Zwishly: free chess game review</title>
     <meta name="description" content="Free game review for your Chess.com and Lichess games. Zwishly runs Stockfish on your own device and shows you the moves you missed." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#18181a" />
+    <script>
+      // Returning players go straight to their latest game. Arriving from another Zwishly page
+      // (such as the logo link) shows this page instead, so it is always reachable.
+      try {
+        var players = JSON.parse(localStorage.getItem('zwishly-players') || '{}') || {};
+        var fromHere = document.referrer && new URL(document.referrer).origin === location.origin;
+        if ((players.chesscom || players.lichess) && !fromHere && !location.hash) location.replace('analyze.html#latest');
+      } catch {}
+    </script>
     <script>
       // Apply the saved site theme before first paint to avoid a flash.
       try {
@@ -20,10 +32,6 @@
       <a class="brand" href="./" aria-label="Zwishly home"><svg class="logo" viewBox="0 0 98 98" aria-hidden="true"><rect x="0" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="20" y="0" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="40" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="0" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="80" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="20" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="40" y="40" width="18" height="18" rx="2.5" fill="#e8683a"/><rect x="20" y="60" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="0" y="80" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="20" y="80" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="40" y="80" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="80" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="80" y="80" width="18" height="18" rx="2.5" fill="currentColor"/></svg><span class="wordmark">zwishly</span></a>
       <nav class="landing-nav">
         <a class="ghost-link" href="analyze.html">Open the board</a>
-        <div id="landing-guest" class="account-menu">
-          <button id="landing-signin" class="ghost-btn">Sign in</button>
-          <button id="landing-signup" class="primary">Sign up</button>
-        </div>
       </nav>
     </header>
 
@@ -32,10 +40,21 @@
         <p class="landing-def"><i>zwischenzug</i> (n.) an unexpected move creating an immediate threat.</p>
         <h1>Find the move <em>between</em> the moves.</h1>
         <p class="landing-lead">Zwishly reviews your Chess.com and Lichess games and shows you what you missed. It’s free, and the engine runs on your own device.</p>
-        <div class="landing-actions">
-          <a class="landing-cta" href="analyze.html">Review a game</a>
-          <span id="landing-note" class="landing-note">No account needed.</span>
-        </div>
+        <form id="latest-form" class="latest-form" novalidate>
+          <div class="site-pills" role="group" aria-label="Where you play">
+            <button type="button" class="site-pill active" data-site="chesscom" aria-pressed="true">Chess.com</button>
+            <button type="button" class="site-pill" data-site="lichess" aria-pressed="false">Lichess</button>
+          </div>
+          <div class="latest-row">
+            <input id="latest-user" type="text" placeholder="Your username" aria-label="Your username" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" />
+            <button id="latest-submit" class="landing-cta" type="submit">Review my last game</button>
+          </div>
+          <p id="latest-error" class="form-error" role="alert"></p>
+          <p class="landing-note">
+            Free, unlimited, no account. <a href="analyze.html">Or open the board</a>.
+            <span id="latest-remembered" class="hidden"><br />Remembered: <b id="latest-name"></b> <button id="latest-forget" class="link-btn" type="button">Forget</button></span>
+          </p>
+        </form>
       </section>
 
       <figure class="landing-demo">

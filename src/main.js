@@ -3,13 +3,14 @@ import '@fontsource-variable/inter/index.css';
 import '@lichess-org/chessground/assets/chessground.base.css';
 import '@lichess-org/chessground/assets/chessground.brown.css';
 import './style.css';
-import { initAccount, showGames } from './account.js';
 import { START_FEN } from './chess-utils.js';
-import { importGame } from './importers.js';
+import { initGames, showGames } from './games.js';
+import { fetchLatestGame, importGame } from './importers.js';
 import { loadOpenings } from './openings.js';
+import { rememberedPlayers } from './player.js';
 import { play as playSound, soundFor } from './sound.js';
 import { renderBoardBadge, setBoardOrientation, syncBoard } from './app/board.js';
-import { adoptAccountPrefs, initCustomize, setDrawerOpen, toggleMute } from './app/customize.js';
+import { initCustomize, setDrawerOpen, toggleMute } from './app/customize.js';
 import { $, setHidden, toast } from './app/dom.js';
 import { engine, updateEngine } from './app/engine-panel.js';
 import {
@@ -29,7 +30,6 @@ import {
 import { renderMoveComment, renderMoves } from './app/moves-panel.js';
 import { renderOpening } from './app/openings-panel.js';
 import { renderPlayers } from './app/players-panel.js';
-import { prefs } from './app/prefs.js';
 import { renderGraphCursor, renderReview, toggleReview } from './app/review.js';
 
 const TABS = ['analyze', 'openings', 'games', 'load'];
@@ -148,15 +148,33 @@ function openImportFromHash() {
   if (link) openLink(link, Object.fromEntries(params));
 }
 
+// analyze#latest: open the remembered player's newest game, across Chess.com and Lichess, and review it at once.
+async function openLatestFromHash() {
+  if (!new URLSearchParams(location.hash.slice(1)).has('latest')) return;
+  const players = Object.entries(rememberedPlayers());
+  if (!players.length) {
+    switchTab('games');
+    toast('Enter your username to see your games.');
+    return;
+  }
+  toast('Finding your latest game…');
+  const results = await Promise.allSettled(players.map(([site, username]) => fetchLatestGame(site, username)));
+  const found = results.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
+  const latest = found.reduce((best, g) => ((g.playedAt ?? 0) > (best?.playedAt ?? -1) ? g : best), null);
+  if (!latest) {
+    const failure = results.find((r) => r.status === 'rejected');
+    toast(failure ? failure.reason.message : 'No finished games yet. Play one and come back.');
+    return;
+  }
+  if (!openPgn(latest.pgn, latest.userColor)) return;
+  switchTab('analyze');
+  if (!game.reviewing) toggleReview();
+}
+
 function openFromHash() {
   openGreatGameFromHash();
   openImportFromHash();
-}
-
-function openGamesTabAfterSignIn() {
-  if (location.hash !== '#games') return;
-  history.replaceState(null, '', location.pathname);
-  switchTab('games');
+  openLatestFromHash();
 }
 
 const KEY_ACTIONS = {
@@ -215,13 +233,7 @@ initCustomize();
 bindControls();
 
 loadOpenings().then(notifyGameChange);
-initAccount({
-  onNotify: toast,
-  onSignedIn: () => switchTab('games'),
-  onAdoptPrefs: adoptAccountPrefs,
-  getPrefs: () => prefs,
-  onOpenGame: (played) => openPgn(played.pgn, played.userColor) && switchTab('analyze'),
-}).then(openGamesTabAfterSignIn);
+initGames({ onOpenGame: (played) => openPgn(played.pgn, played.userColor) && switchTab('analyze') });
 
 const sharedFen = hashParam('fen');
 if (!(sharedFen && openFen(sharedFen))) notifyGameChange();

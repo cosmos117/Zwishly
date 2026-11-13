@@ -50,7 +50,7 @@ export const pieceUrl = (set, color, role) => `${BASE}pieces/${set}/${color}${ro
 const DEFAULTS = { board: 'grey', pieces: 'cburnett', site: 'dark', coords: true, arrows: true, badges: true, sound: true, soundPack: 'wood' };
 const KEY = 'chess-analysis-prefs';
 
-export function normalizePrefs(raw) {
+function normalizePrefs(raw) {
   const prefs = { ...DEFAULTS, ...raw };
   if (!SITE_THEMES.some((t) => t.id === prefs.site)) prefs.site = DEFAULTS.site;
   if (!SOUND_PACKS.some((p) => p.id === prefs.soundPack)) prefs.soundPack = DEFAULTS.soundPack;

@@ -193,9 +193,6 @@ export function play(type = 'move') {
 }
 
 export const isSoundOn = () => enabled;
-export function setSoundEnabled(on) {
-  enabled = on;
-}
 export function toggleSound() {
   enabled = !enabled;
   localStorage.setItem('sound', enabled ? 'on' : 'off');

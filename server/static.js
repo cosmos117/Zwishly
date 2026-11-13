@@ -62,7 +62,9 @@ export function contentSecurityPolicy(dir) {
   const hashes = new Set();
   for (const name of readdirSync(dir).filter((file) => file.endsWith('.html'))) {
     for (const [, script] of readFileSync(join(dir, name), 'utf8').matchAll(INLINE_SCRIPT)) {
-      hashes.add(`'sha256-${createHash('sha256').update(script).digest('base64')}'`);
+      // Browsers turn Windows line endings into plain newlines before hashing, so do the same here.
+      const text = script.replace(/\r\n?/g, '\n');
+      hashes.add(`'sha256-${createHash('sha256').update(text).digest('base64')}'`);
     }
   }
   return [

@@ -1,4 +1,4 @@
-# Render blueprint: New > Blueprint, pick this repository, then fill in the two Turso values.
+# Render blueprint: New > Blueprint, then pick this repository.
 services:
   - type: web
     name: zwishly
@@ -6,13 +6,7 @@ services:
     plan: free
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
-    healthCheckPath: /
+    healthCheckPath: /healthz
     envVars:
       - key: NODE_VERSION
         value: 22
-      - key: TRUST_PROXY
-        value: 1
-      - key: TURSO_DATABASE_URL
-        sync: false
-      - key: TURSO_AUTH_TOKEN
-        sync: false

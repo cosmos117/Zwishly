@@ -6,33 +6,69 @@ import '@lichess-org/chessground/assets/chessground.brown.css';
 import './style.css';
 import './landing.css';
 import { moveLabel } from './chess-utils.js';
-import { loadPrefs, normalizePrefs, savePrefs, applyTheme } from './themes.js';
-import { fetchUser, flushPrefs, openAuth, queuePrefsSave, session } from './session.js';
+import { SITES, playerExists } from './importers.js';
+import { USERNAME_RE, forgetPlayers, rememberPlayer, rememberedPlayers } from './player.js';
+import { loadPrefs, applyTheme } from './themes.js';
 
 const $ = (id) => document.getElementById(id);
 applyTheme(loadPrefs());
 
-async function goToGames() {
-  if (!session.user.prefs) queuePrefsSave(loadPrefs());
-  await flushPrefs();
-  location.href = 'analyze.html#games';
+// "Type your username, get your last game reviewed." The name is kept in this browser, and from then on
+// opening the site goes straight to the newest game (see the redirect script in index.html).
+const form = { site: 'chesscom' };
+
+function selectSite(site) {
+  form.site = site;
+  document.querySelectorAll('#latest-form .site-pill').forEach((pill) => {
+    const on = pill.dataset.site === site;
+    pill.classList.toggle('active', on);
+    pill.setAttribute('aria-pressed', String(on));
+  });
+  $('latest-user').value = rememberedPlayers()[site] ?? '';
+  $('latest-error').textContent = '';
 }
 
-$('landing-signin').onclick = () => openAuth('login', goToGames);
-$('landing-signup').onclick = () => openAuth('register', goToGames);
+function renderRemembered() {
+  const players = rememberedPlayers();
+  const names = Object.entries(players).map(([site, name]) => `${name} (${SITES[site].name})`);
+  $('latest-remembered').classList.toggle('hidden', !names.length);
+  $('latest-name').textContent = names.join(', ');
+}
 
-fetchUser()
-  .then((user) => {
-    if (!user) return;
-    $('landing-guest').classList.add('hidden');
-    $('landing-note').textContent = `Signed in as ${user.email}`;
-    if (user.prefs) {
-      const prefs = normalizePrefs(user.prefs);
-      savePrefs(prefs);
-      applyTheme(prefs);
+async function submitLatest(event) {
+  event.preventDefault();
+  const username = $('latest-user').value.trim();
+  const error = $('latest-error');
+  error.textContent = '';
+  if (!USERNAME_RE.test(username)) {
+    error.textContent = username ? 'Usernames use only letters, numbers, - and _.' : `Enter your ${SITES[form.site].name} username.`;
+    return;
+  }
+  const button = $('latest-submit');
+  button.disabled = true;
+  try {
+    if (!(await playerExists(form.site, username))) {
+      error.textContent = `We couldn’t find “${username}” on ${SITES[form.site].name}.`;
+      return;
     }
-  })
-  .catch(() => $('landing-guest').classList.add('hidden')); // no account server on this copy
+    rememberPlayer(form.site, username);
+    location.href = 'analyze.html#latest';
+  } finally {
+    button.disabled = false;
+  }
+}
+
+document.querySelectorAll('#latest-form .site-pill').forEach((pill) => (pill.onclick = () => selectSite(pill.dataset.site)));
+$('latest-form').onsubmit = submitLatest;
+$('latest-forget').onclick = () => {
+  forgetPlayers();
+  selectSite(form.site);
+  renderRemembered();
+  $('latest-user').focus();
+};
+const remembered = rememberedPlayers();
+selectSite(!remembered.chesscom && remembered.lichess ? 'lichess' : 'chesscom');
+renderRemembered();
 
 let greatGames = [];
 

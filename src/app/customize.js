@@ -1,6 +1,6 @@
-import { BOARDS, PIECE_SETS, SITE_THEMES, SOUND_PACKS, applyTheme, boardSvg, normalizePrefs, pieceUrl, savePrefs } from '../themes.js';
-import { isSoundOn, play as playSound, setSoundEnabled, setSoundPack, toggleSound } from '../sound.js';
-import { clearEngineArrows, forgetBoardBadge, setBoardCoordinates } from './board.js';
+import { BOARDS, PIECE_SETS, SITE_THEMES, SOUND_PACKS, applyTheme, boardSvg, pieceUrl } from '../themes.js';
+import { isSoundOn, play as playSound, setSoundPack, toggleSound } from '../sound.js';
+import { clearEngineArrows, setBoardCoordinates } from './board.js';
 import { $, setHidden, toast } from './dom.js';
 import { updateEngine } from './engine-panel.js';
 import { notifyGameChange } from './game.js';
@@ -33,21 +33,6 @@ function setPref(key, value) {
   persistPrefs();
   applyTheme(prefs);
   renderCustomizer();
-}
-
-export function adoptAccountPrefs(saved) {
-  const next = normalizePrefs(saved);
-  if (JSON.stringify(next) === JSON.stringify(normalizePrefs(prefs))) return;
-  Object.assign(prefs, next);
-  savePrefs(prefs);
-  applyTheme(prefs);
-  setSoundEnabled(prefs.sound);
-  setSoundPack(prefs.soundPack);
-  renderSoundButton(prefs.sound);
-  setBoardCoordinates(prefs.coords);
-  renderCustomizer();
-  forgetBoardBadge();
-  notifyGameChange();
 }
 
 function choiceButton(key, id, name, swatchHtml) {

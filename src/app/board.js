@@ -123,10 +123,6 @@ function createBadge(node, cls) {
   return badge;
 }
 
-export function forgetBoardBadge() {
-  shownBadge = null;
-}
-
 export function renderBoardBadge() {
   const line = currentLine();
   const index = cursorPly() - 1;

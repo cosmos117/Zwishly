@@ -6,6 +6,9 @@
     <title>Analyze · Zwishly</title>
     <meta name="description" content="Review your Chess.com and Lichess games for free. Zwishly runs Stockfish on your own device and shows you the moves you missed." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#18181a" />
     <script>
       // Apply the saved site theme before first paint to avoid a flash.
       try {
@@ -19,32 +22,8 @@
       <a class="brand" href="./" aria-label="Zwishly home"><svg class="logo" viewBox="0 0 98 98" aria-hidden="true"><rect x="0" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="20" y="0" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="40" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="0" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="80" y="0" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="20" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="40" y="40" width="18" height="18" rx="2.5" fill="#e8683a"/><rect x="20" y="60" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="0" y="80" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="20" y="80" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="40" y="80" width="18" height="18" rx="2.5" fill="currentColor"/><rect x="60" y="80" width="18" height="18" rx="2.5" fill="#8a8a8a"/><rect x="80" y="80" width="18" height="18" rx="2.5" fill="currentColor"/></svg><span class="wordmark">zwishly</span></a>
       <div class="top-actions">
         <button id="btn-customize" class="ghost-btn" title="Colors, board and pieces">Customize</button>
-        <div id="guest-actions" class="account-menu">
-          <button id="btn-signin" class="ghost-btn">Sign in</button>
-          <button id="btn-signup" class="primary">Sign up</button>
-        </div>
-        <div id="account-menu" class="account-menu hidden">
-          <span id="account-email" class="account-email"></span>
-          <button id="btn-profile" class="ghost-btn">Profile</button>
-          <button id="btn-signout" class="ghost-btn">Sign out</button>
-        </div>
       </div>
     </header>
-
-    <dialog id="profile-dialog" class="auth-dialog" aria-labelledby="profile-title">
-      <button id="profile-close" class="drawer-close auth-close" type="button" aria-label="Close">✕</button>
-      <h2 id="profile-title">Your profile</h2>
-      <p class="muted"><span id="profile-email"></span></p>
-      <form id="profile-form">
-        <label for="profile-chesscom">Chess.com username</label>
-        <input id="profile-chesscom" type="text" autocomplete="off" spellcheck="false" maxlength="30" />
-        <label for="profile-lichess">Lichess username</label>
-        <input id="profile-lichess" type="text" autocomplete="off" spellcheck="false" maxlength="30" />
-        <p class="field-hint">Your theme, board and pieces are saved to your account automatically.</p>
-        <p id="profile-error" class="form-error" role="alert"></p>
-        <button id="profile-submit" class="primary wide" type="submit">Save profile</button>
-      </form>
-    </dialog>
 
     <div id="drawer-backdrop" class="drawer-backdrop hidden"></div>
     <aside id="drawer" class="drawer" aria-hidden="true">
@@ -173,13 +152,6 @@
               <input id="games-user" type="text" placeholder="Your username" aria-label="Username" autocomplete="off" spellcheck="false" maxlength="30" />
               <button id="games-submit" class="primary" type="submit">Show games</button>
             </form>
-            <p id="games-linked" class="linked-note hidden">
-              Linked to <b id="games-linked-name"></b>
-              <button id="games-unlink" class="link-btn" type="button">Unlink</button>
-            </p>
-            <p id="games-guest" class="guest-note">
-              <button id="games-signin" class="link-btn" type="button">Create a free account</button> and Zwishly remembers your usernames, so your games are here every time you visit.
-            </p>
             <p id="games-status" class="status-line" role="status"></p>
           </div>
           <div id="games-results" class="card hidden">
