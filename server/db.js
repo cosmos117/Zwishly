@@ -17,32 +17,50 @@ function connect() {
   return createClient({ url: pathToFileURL(path).href });
 }
 
-export const db = connect();
+const db = connect();
 
-export const run = (sql, ...args) => db.execute({ sql, args });
+async function createTables() {
+  await db.batch(
+    [
+      `CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT,            -- null for accounts that only use a sign-in provider
+        chesscom_username TEXT,
+        lichess_username TEXT,
+        created_at INTEGER NOT NULL,
+        prefs TEXT
+      )`,
+      `CREATE TABLE IF NOT EXISTS sessions (
+        token_hash TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at INTEGER NOT NULL
+      )`,
+      'CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at)',
+    ],
+    'write',
+  );
+  // Columns added after the first release; existing databases pick them up here.
+  const columns = (await db.execute('PRAGMA table_info(users)')).rows.map((column) => column.name);
+  if (!columns.includes('prefs')) await db.execute('ALTER TABLE users ADD COLUMN prefs TEXT');
+}
+
+// The database is on another machine, so it can be unreachable when the app starts. The site
+// still serves analysis then; account requests fail and setup is tried again on the next one.
+let tables = null;
+function tablesReady() {
+  tables ??= createTables().catch((error) => {
+    tables = null;
+    throw error;
+  });
+  return tables;
+}
+
+export async function run(sql, ...args) {
+  await tablesReady();
+  return db.execute({ sql, args });
+}
+
 export const getRow = async (sql, ...args) => (await run(sql, ...args)).rows[0] ?? null;
 
-await db.batch(
-  [
-    `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
-      password_hash TEXT,            -- null for accounts that only use a sign-in provider
-      chesscom_username TEXT,
-      lichess_username TEXT,
-      created_at INTEGER NOT NULL,
-      prefs TEXT
-    )`,
-    `CREATE TABLE IF NOT EXISTS sessions (
-      token_hash TEXT PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      expires_at INTEGER NOT NULL
-    )`,
-    'CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at)',
-  ],
-  'write',
-);
-
-// Columns added after the first release; existing databases pick them up here.
-const columns = (await db.execute('PRAGMA table_info(users)')).rows.map((column) => column.name);
-if (!columns.includes('prefs')) await db.execute('ALTER TABLE users ADD COLUMN prefs TEXT');
+tablesReady().catch((error) => console.error(`The account database can’t be reached, so sign-in is unavailable: ${error.message}`));
