@@ -26,7 +26,10 @@
             <option value="chesscom">Chess.com</option>
             <option value="lichess">Lichess</option>
           </select>
-          <input id="latest-user" type="text" placeholder="Your username" aria-label="Your username" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" />
+          <span class="user-field">
+            <input id="latest-user" type="text" placeholder="Your username" aria-label="Your username" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" />
+            <button id="latest-save" class="save-user hidden" type="button" title="Save username" aria-label="Save username"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </span>
           <button id="latest-submit" class="primary" type="submit" aria-label="Review last game"><span class="label-long">Review last game</span><span class="label-short">Review</span></button>
         </form>
         <button id="btn-customize" class="ghost-btn" title="Colors, board and pieces">Customize</button>

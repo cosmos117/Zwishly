@@ -184,6 +184,36 @@ function openLatestFromHash() {
 // the latest game by themselves. Submitting an empty box forgets that site's name.
 function showRememberedName() {
   $('latest-user').value = rememberedPlayers()[$('latest-site').value] ?? '';
+  updateSaveButton();
+}
+
+// The small check mark appears while the box holds a name that isn't saved yet.
+function updateSaveButton() {
+  const typed = $('latest-user').value.trim();
+  setHidden($('latest-save'), !typed || typed === rememberedPlayers()[$('latest-site').value]);
+}
+
+async function saveUsername() {
+  const site = $('latest-site').value;
+  const siteName = SITES[site].name;
+  const username = $('latest-user').value.trim();
+  if (!USERNAME_RE.test(username)) {
+    toast('Usernames use only letters, numbers, - and _.');
+    return;
+  }
+  const button = $('latest-save');
+  button.disabled = true;
+  try {
+    if (!(await playerExists(site, username))) {
+      toast(`We couldn’t find “${username}” on ${siteName}.`);
+      return;
+    }
+    rememberPlayer(site, username);
+    toast(`${siteName} username “${username}” saved.`);
+    updateSaveButton();
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function submitLatest(event) {
@@ -194,6 +224,7 @@ async function submitLatest(event) {
   if (!username) {
     if (rememberedPlayers()[site]) {
       forgetPlayer(site);
+      updateSaveButton();
       toast(`Forgot your ${siteName} username.`);
     } else {
       toast(`Enter your ${siteName} username.`);
@@ -212,6 +243,7 @@ async function submitLatest(event) {
       return;
     }
     rememberPlayer(site, username);
+    updateSaveButton();
     await openLatestGame([[site, username]]);
   } finally {
     button.disabled = false;
@@ -224,6 +256,8 @@ function initLatestForm() {
   showRememberedName();
   $('latest-site').onchange = showRememberedName;
   $('latest-form').onsubmit = submitLatest;
+  $('latest-user').oninput = updateSaveButton;
+  $('latest-save').onclick = saveUsername;
 }
 
 function openFromHash() {

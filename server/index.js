@@ -27,9 +27,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Point a free uptime monitor here to keep a sleeping host awake.
-app.get('/healthz', (req, res) => res.type('text').set('Cache-Control', 'no-store').send('ok'));
-
 if (isDev) {
   const { createServer } = await import('vite');
   const vite = await createServer({ root, server: { middlewareMode: true } });

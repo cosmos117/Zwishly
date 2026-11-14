@@ -1,6 +1,7 @@
 import { Chess } from 'chess.js';
 import { CLASSES, aggregateAccuracy, classifyMove, volatilityWeights, winPercent } from '../analysis.js';
 import { terminalEval } from '../chess-utils.js';
+import { explainGame } from '../explain.js';
 import { loadOpenings, openingAt } from '../openings.js';
 import { tacticsOf } from './classification.js';
 import { $, escapeHtml, setHidden, toast } from './dom.js';
@@ -60,6 +61,7 @@ function buildReview(moves, positions, version) {
       tactics: tacticsOf(move, moves[index - 1]),
     }),
   );
+  explainGame(moves, { evals, best, results }).forEach((note, index) => (results[index].note = note));
   const weights = volatilityWeights(evals);
   const accuracyFor = (color) => {
     const mine = results.map((r, i) => i).filter((i) => moves[i].color === color);

@@ -58,7 +58,7 @@ npm start          # serves dist/, default port 3000
 ```
 
 The build also writes Brotli and gzip copies of every text file, which the server sends as they are. Needs Node 22.13 or newer and HTTPS
-in front of it. The only setting is `PORT`. `render.yaml` still works on Render, but its free plan sleeps after 15 minutes without traffic.
+in front of it. The only setting is `PORT`.
 
 - **Bandwidth**: a first visit downloads about 1.3–1.5 MB, mostly the engine; returning visitors use their cache.
 

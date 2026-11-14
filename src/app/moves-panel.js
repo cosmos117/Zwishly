@@ -131,6 +131,7 @@ export function renderMoveComment() {
   const evalHtml = after && result.cls !== 'textbook' ? ` <span class="muted">(${formatEval(after)})</span>` : '';
   comment.innerHTML =
     `<div class="verdict"><span class="badge cls-${result.cls}" style="background:${color}">${symbol}</span> <b>${move.san}</b> is ${verdictHtml(result)}${evalHtml}</div>` +
+    (result.note ? `<div class="explain">${escapeHtml(result.note)}</div>` : '') +
     betterMoveHtml(move, result, best, before);
 
   const betterMoveLink = $('show-best');

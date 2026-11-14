@@ -59,7 +59,7 @@ function severity(loss) {
 }
 
 // Lichess's per-move accuracy curve, including its +1 bonus for the engine's own imperfection.
-export function moveAccuracy(loss) {
+function moveAccuracy(loss) {
   if (loss <= 0) return 100;
   const raw = 103.1668100711649 * Math.exp(-0.04354415386753951 * loss) - 3.166924740191411;
   return Math.max(0, Math.min(100, raw + 1));
@@ -69,7 +69,7 @@ export function moveAccuracy(loss) {
 // disagree with the search that judged the move. When the played move is one of the engine's
 // lines, that line's score is used instead; when it is not, it cannot be better than the
 // weakest line the engine preferred over it.
-export function playedMoveEval({ after, lines = [], uci, color }) {
+function playedMoveEval({ after, lines = [], uci, color }) {
   if (!lines.length || !uci) return after;
   const line = lines.find((l) => l.uci === uci);
   if (line) return line.ev;
