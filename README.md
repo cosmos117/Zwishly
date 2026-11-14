@@ -38,15 +38,17 @@ npm run dev        # http://localhost:5173 (landing page), /analyze (the app)
 The site is fully static: Stockfish runs in each visitor's browser and game lookups go straight from the browser to Chess.com and
 Lichess. Any static host works, and nothing ever has to wake up.
 
-### Cloudflare Pages (recommended, free, never sleeps)
+### Cloudflare Pages (live, free, never sleeps)
+
+Live at https://zwishly.pages.dev.
 
 1. In the Cloudflare dashboard, go to **Workers & Pages > Create > Pages > Connect to Git** and pick this repository.
-2. Build settings: framework preset **None**, build command `npm run build`, output directory `dist`.
-3. Save and deploy. Every push to `main` redeploys. The Node version comes from `.nvmrc`.
-4. Point the browser extension at the new address: set `ZWISHLY_URL` in `extension/config.js`.
+2. Project name `zwishly`, framework preset **None**, build command `npm run build`, output directory `dist`. The Node version comes
+   from `.nvmrc`.
+3. Every push to `main` redeploys.
 
 The build writes `dist/_headers`, so Pages sends the same Content-Security-Policy, HSTS and caching headers as the Node server.
-`/analyze` serves `analyze.html` automatically, and unknown addresses get `404.html`. Free plan: unlimited bandwidth and requests, 500 builds a month.
+`/analyze` serves `analyze.html`, and unknown addresses get `404.html`. Free plan: unlimited bandwidth and requests.
 
 ### Your own Node server
 

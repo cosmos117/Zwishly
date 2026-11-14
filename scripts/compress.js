@@ -5,9 +5,9 @@ import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 
-// Cloudflare Pages compresses on its own, and the copies would only be uploaded as extra files.
-if (process.env.CF_PAGES) {
-  console.log('Cloudflare Pages build: skipping precompressed copies');
+// Cloudflare (Workers and Pages) compresses on its own, and the copies would only be uploaded as extra files.
+if (process.env.WORKERS_CI || process.env.CF_PAGES) {
+  console.log('Cloudflare build: skipping precompressed copies');
   process.exit(0);
 }
 

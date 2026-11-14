@@ -1,3 +1,2 @@
-// Where the Zwishly analysis page lives. Change this to your deployed site before publishing,
-// for example 'https://your-domain.example/analyze.html'.
-const ZWISHLY_URL = 'http://localhost:5173/analyze.html';
+// Where the Zwishly analysis page lives. For local testing use 'http://localhost:5173/analyze.html'.
+const ZWISHLY_URL = 'https://zwishly.pages.dev/analyze';

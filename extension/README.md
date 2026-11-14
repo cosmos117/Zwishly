@@ -7,13 +7,13 @@ It only works on finished games: reviewing a game that is still being played wou
 
 ## Set the site address
 
-`config.js` holds the address of the analysis page. It points at the local dev server by default:
+`config.js` holds the address of the analysis page. It points at the live site:
 
 ```js
-const ZWISHLY_URL = 'http://localhost:5173/analyze.html';
+const ZWISHLY_URL = 'https://zwishly.pages.dev/analyze';
 ```
 
-Change it to the deployed site before publishing.
+To test against the local dev server, set it to `'http://localhost:5173/analyze.html'` instead.
 
 ## Try it locally
 
