@@ -5,6 +5,12 @@ import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 
+// Cloudflare Pages compresses on its own, and the copies would only be uploaded as extra files.
+if (process.env.CF_PAGES) {
+  console.log('Cloudflare Pages build: skipping precompressed copies');
+  process.exit(0);
+}
+
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.wasm', '.md']);
 const MIN_BYTES = 1024;
 

@@ -38,7 +38,11 @@ if (isDev) {
   app.use(staticFiles(dist));
 }
 
-app.use((req, res) => res.status(404).type('text').send('Not found.'));
+const notFoundPage = join(dist, '404.html');
+app.use((req, res) => {
+  if (!isDev && req.accepts('html')) return res.status(404).sendFile(notFoundPage, () => res.end());
+  res.status(404).type('text').send('Not found.');
+});
 // Without this, Express answers a failed request with a stack trace.
 app.use((err, req, res, next) => {
   const status = err.status >= 400 && err.status < 500 ? err.status : 500;

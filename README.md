@@ -35,27 +35,30 @@ npm run dev        # http://localhost:5173 (landing page), /analyze (the app)
 
 ## Deploy
 
+The site is fully static: Stockfish runs in each visitor's browser and game lookups go straight from the browser to Chess.com and
+Lichess. Any static host works, and nothing ever has to wake up.
+
+### Cloudflare Pages (recommended, free, never sleeps)
+
+1. In the Cloudflare dashboard, go to **Workers & Pages > Create > Pages > Connect to Git** and pick this repository.
+2. Build settings: framework preset **None**, build command `npm run build`, output directory `dist`.
+3. Save and deploy. Every push to `main` redeploys. The Node version comes from `.nvmrc`.
+4. Point the browser extension at the new address: set `ZWISHLY_URL` in `extension/config.js`.
+
+The build writes `dist/_headers`, so Pages sends the same Content-Security-Policy, HSTS and caching headers as the Node server.
+`/analyze` serves `analyze.html` automatically, and unknown addresses get `404.html`. Free plan: unlimited bandwidth and requests, 500 builds a month.
+
+### Your own Node server
+
 ```bash
 npm run build
 npm start          # serves dist/, default port 3000
 ```
 
-The build also writes Brotli and gzip copies of every text file, which the server sends as they are. Hashed assets are cached for a year,
-the engine and piece sets for a week, and pages are always revalidated. Responses carry a Content-Security-Policy, HSTS and related headers.
+The build also writes Brotli and gzip copies of every text file, which the server sends as they are. Needs Node 22.13 or newer and HTTPS
+in front of it. The only setting is `PORT`. `render.yaml` still works on Render, but its free plan sleeps after 15 minutes without traffic.
 
-Needs Node 22.13 or newer and HTTPS in front of it. The only setting is `PORT`. On [Render](https://render.com), choose **New > Blueprint**
-and pick this repository; `render.yaml` sets the build and start commands.
-
-`dist/` also works on its own on any static host, since the server holds no data.
-
-## Staying on free plans
-
-- **Sleeping**: Render's free service stops after 15 minutes without traffic and takes about a minute to wake. To keep it awake, add a free
-  uptime monitor (for example UptimeRobot) that requests `https://<your-site>/healthz` every 5 minutes. One service running all month
-  uses about 744 of Render's 750 free hours, so keep this the only free service in that Render workspace.
-- **Bandwidth**: a first visit downloads about 1.3–1.5 MB, mostly the engine; returning visitors use their cache. Check the host's monthly
-  allowance as the site grows.
-- **Analysis costs nothing to serve**: Stockfish runs in each visitor's browser, and game lookups go from the browser straight to Chess.com and Lichess.
+- **Bandwidth**: a first visit downloads about 1.3–1.5 MB, mostly the engine; returning visitors use their cache.
 
 ## Memory
 
