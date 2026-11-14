@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import { CLASSES, aggregateAccuracy, classifyMove, winPercent } from '../analysis.js';
+import { CLASSES, aggregateAccuracy, classifyMove, volatilityWeights, winPercent } from '../analysis.js';
 import { terminalEval } from '../chess-utils.js';
 import { loadOpenings, openingAt } from '../openings.js';
 import { tacticsOf } from './classification.js';
@@ -12,19 +12,27 @@ const GRAPH_WIDTH = 600;
 const GRAPH_HEIGHT = 120;
 const MARKED_ON_GRAPH = ['glorious', 'inaccuracy', 'overlook', 'error', 'blunder'];
 
+const REVIEW_LINES = 3;
+
 let cancelRequested = false;
 
 async function evaluatePosition(fen, depth) {
   const final = terminalEval(new Chess(fen));
-  if (final) return { ev: final, best: null, second: undefined };
+  if (final) return { ev: final, best: null, second: undefined, lines: [] };
 
-  const result = await engine.analyze(fen, { depth, multipv: 2 });
+  const result = await engine.analyze(fen, { depth, multipv: REVIEW_LINES });
   if (result.stopped) return null;
+  // Only lines from the deepest completed iteration are comparable with each other.
+  const deepest = Math.max(0, ...result.lines.map((l) => l.depth));
+  const lines = result.lines
+    .filter((l) => l.depth === deepest)
+    .map((l) => ({ uci: l.pv[0], ev: { cp: l.cp, mate: l.mate } }));
   const [top, second] = result.lines;
   return {
     ev: top ? { cp: top.cp, mate: top.mate } : { cp: 0, mate: null },
     best: result.bestmove,
     second: second ? { cp: second.cp, mate: second.mate } : null,
+    lines,
   };
 }
 
@@ -46,11 +54,17 @@ function buildReview(moves, positions, version) {
       second: positions[index].second,
       color: move.color,
       isBest: best[index] === move.uci,
+      lines: positions[index].lines,
+      uci: move.uci,
       book: openingAt(move.fen),
       tactics: tacticsOf(move, moves[index - 1]),
     }),
   );
-  const accuracyFor = (color) => aggregateAccuracy(results.filter((_, i) => moves[i].color === color).map((r) => r.accuracy));
+  const weights = volatilityWeights(evals);
+  const accuracyFor = (color) => {
+    const mine = results.map((r, i) => i).filter((i) => moves[i].color === color);
+    return aggregateAccuracy(mine.map((i) => results[i].accuracy), mine.map((i) => weights[i]));
+  };
   return { version, evals, best, results, accuracy: { w: accuracyFor('w'), b: accuracyFor('b') } };
 }
 

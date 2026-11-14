@@ -58,11 +58,31 @@ function severity(loss) {
   return loss < 20 ? 'error' : 'blunder';
 }
 
-export function classifyMove({ before, after, second, color, isBest, book, tactics = {} }) {
+// Lichess's per-move accuracy curve, including its +1 bonus for the engine's own imperfection.
+export function moveAccuracy(loss) {
+  if (loss <= 0) return 100;
+  const raw = 103.1668100711649 * Math.exp(-0.04354415386753951 * loss) - 3.166924740191411;
+  return Math.max(0, Math.min(100, raw + 1));
+}
+
+// The eval of the position after a move comes from a separate search, so at a fixed depth it can
+// disagree with the search that judged the move. When the played move is one of the engine's
+// lines, that line's score is used instead; when it is not, it cannot be better than the
+// weakest line the engine preferred over it.
+export function playedMoveEval({ after, lines = [], uci, color }) {
+  if (!lines.length || !uci) return after;
+  const line = lines.find((l) => l.uci === uci);
+  if (line) return line.ev;
+  const worstShown = lines[lines.length - 1].ev;
+  return moverWinPercent(after, color) > moverWinPercent(worstShown, color) ? worstShown : after;
+}
+
+export function classifyMove({ before, after, second, color, isBest, book, tactics = {}, lines, uci }) {
+  const judged = playedMoveEval({ after, lines, uci, color });
   const wpBefore = moverWinPercent(before, color);
-  const wpAfter = moverWinPercent(after, color);
+  const wpAfter = isBest ? wpBefore : moverWinPercent(judged, color);
   const loss = Math.max(0, wpBefore - wpAfter);
-  const accuracy = Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * loss) - 3.1669));
+  const accuracy = moveAccuracy(loss);
   const scores = { loss, accuracy, wpAfter };
   const move = { before, after, second, color, isBest, tactics, wpBefore, wpAfter, loss };
 
@@ -74,9 +94,31 @@ export function classifyMove({ before, after, second, color, isBest, book, tacti
   return { ...scores, cls: isOverlook(move) ? 'overlook' : severity(loss) };
 }
 
-export function aggregateAccuracy(values) {
-  if (!values.length) return null;
+function standardDeviation(values) {
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  return Math.sqrt(values.reduce((a, v) => a + (v - mean) ** 2, 0) / values.length);
+}
+
+// Lichess weights each move by how volatile the game was around it (the standard deviation of
+// win% over a sliding window), so a slip in a sharp position counts more than one in a dead
+// equal or long-decided one. Returns one weight per move for evals of length moves + 1.
+export function volatilityWeights(evals) {
+  const wins = evals.map(winPercent);
+  const moves = wins.length - 1;
+  if (moves < 1) return [];
+  const size = Math.min(wins.length, Math.max(2, Math.min(8, Math.floor(wins.length / 10))));
+  const first = wins.slice(0, size);
+  const windows = Array.from({ length: Math.max(0, size - 2) }, () => first);
+  for (let i = 0; i + size <= wins.length; i++) windows.push(wins.slice(i, i + size));
+  return windows.slice(0, moves).map((w) => Math.max(0.5, Math.min(12, standardDeviation(w))));
+}
+
+// Average of the volatility-weighted mean and the harmonic mean, as Lichess computes it. The
+// harmonic mean keeps a single blunder from being hidden by many easy moves.
+export function aggregateAccuracy(values, weights = values.map(() => 1)) {
+  if (!values.length) return null;
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const weightedMean = values.reduce((a, v, i) => a + v * weights[i], 0) / totalWeight;
   const harmonicMean = values.length / values.reduce((a, b) => a + 1 / Math.max(b, 1), 0);
-  return (mean + harmonicMean) / 2;
+  return (weightedMean + harmonicMean) / 2;
 }
